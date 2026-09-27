@@ -59,12 +59,12 @@ app.get('/api/prenotazioni/occupate', async (req, res) => {
 });
 const path = require('path');
 
-// Serve la pagina HTML e i file statici dalla cartella principale
-app.use(express.static(path.join(__dirname, './')));
+// Serve i file statici generati da Flutter nella cartella build/web
+app.use(express.static(path.join(__dirname, 'build', 'web')));
 
-// Rotta esplicita per la homepage
+// Rotta esplicita per la homepage di Flutter
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'web', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
