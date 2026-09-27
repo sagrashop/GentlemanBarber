@@ -39,11 +39,6 @@ prenotazioneSchema.index({ data: 1, ora: 1 }, { unique: true });
 
 const Prenotazione = mongoose.model('Prenotazione', prenotazioneSchema, 'prenotazioni');
 
-// Rotta di test per verificare che il server sia online
-app.get('/', (req, res) => {
-    res.status(200).json({ success: true, message: 'Server API di Gentleman Barber attivo!' });
-});
-
 // Rotta per creare una nuova prenotazione
 app.post('/api/prenotazioni', async (req, res) => {
     console.log("Richiesta ricevuta dal client:", req.body);
@@ -93,6 +88,16 @@ app.get('/api/prenotazioni/occupate', async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: 'Errore nel recupero degli orari.' });
     }
+});
+
+const path = require('path');
+
+// Serve i file statici generati da Flutter nella cartella build/web
+app.use(express.static(path.join(__dirname, 'build', 'web')));
+
+// Rotta esplicita per la homepage di Flutter
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'web', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
