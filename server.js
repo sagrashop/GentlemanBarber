@@ -31,11 +31,14 @@ const Prenotazione = mongoose.model('Prenotazione', prenotazioneSchema, 'prenota
 
 // Rotta per creare una nuova prenotazione
 app.post('/api/prenotazioni', async (req, res) => {
+    console.log("Richiesta ricevuta dal client:", req.body);
     try {
         const nuovaPrenotazione = new Prenotazione(req.body);
         await nuovaPrenotazione.save();
+        console.log("Salvato con successo su MongoDB!");
         res.status(201).json({ success: true, message: 'Prenotazione effettuata con successo!' });
     } catch (error) {
+        console.error("ERRORE DURANTE IL SALVATAGGIO:", error);
         if (error.code === 11000) {
             return res.status(400).json({ 
                 success: false, 
