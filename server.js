@@ -57,6 +57,15 @@ app.get('/api/prenotazioni/occupate', async (req, res) => {
         res.status(500).json({ success: false, message: 'Errore nel recupero degli orari.' });
     }
 });
+const path = require('path');
+
+// Serve la pagina HTML e i file statici dalla cartella principale
+app.use(express.static(path.join(__dirname, './')));
+
+// Rotta esplicita per la homepage
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
