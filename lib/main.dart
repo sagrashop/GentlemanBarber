@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const GentlemanBarberApp());
@@ -109,12 +106,15 @@ class _BookingScreenState extends State {
     },
   ];
 
-  List getAvailableTimeSlots() {
+  // Restituisce gli orari in base al giorno della settimana (1 = Lunedì, 7 = Domenica)
+  List<String> getAvailableTimeSlots() {
     int weekday = selectedDate.weekday;
 
+    // Lunedì (1) e Domenica (7): Chiuso
     if (weekday == DateTime.monday || weekday == DateTime.sunday) {
-      return []; // Chiuso
+      return [];
     }
+    // Martedì (2) a Giovedì (4): 08:00 - 19:30
     if (weekday >= DateTime.tuesday && weekday <= DateTime.thursday) {
       return [
         '08:00',
@@ -129,6 +129,7 @@ class _BookingScreenState extends State {
         '19:00',
       ];
     }
+    // Venerdì (5) e Sabato (6): 08:30 - 20:00
     if (weekday == DateTime.friday || weekday == DateTime.saturday) {
       return [
         '08:30',
@@ -152,7 +153,7 @@ class _BookingScreenState extends State {
   }
 
   void _updateDefaultTime() {
-    List slots = getAvailableTimeSlots();
+    List<String> slots = getAvailableTimeSlots();
     if (slots.isNotEmpty) {
       selectedTime = slots.first;
     } else {
@@ -189,8 +190,7 @@ class _BookingScreenState extends State {
     }
   }
 
-  // --- FUNZIONE AGGIORNATA PER COMUNICARE CON IL SERVER E SALVARE SU MONGO ---
-  Future _confirmBooking() async {
+  void _confirmBooking() {
     List currentSlots = getAvailableTimeSlots();
     if (currentSlots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -210,76 +210,38 @@ class _BookingScreenState extends State {
       return;
     }
 
-    // Indirizzo del server Node.js (usa http://localhost:3000 o http://10.0.2.2:3000 per emulatore Android)
-    final url = Uri.parse('http://localhost:3000/api/prenotazioni');
-
-    final bodyData = {
-      'servizio': selectedService['name'],
-      'prezzo': selectedService['price'],
-      'data':
-          '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-      'ora': selectedTime,
-      'nome': nameController.text,
-      'telefono': phoneController.text,
-    };
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(bodyData),
-      );
-
-      if (response.statusCode == 201) {
-        // Salvataggio riuscito su MongoDB
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1a1a1a),
-            title: const Text(
-              'Prenotazione Confermata',
-              style: TextStyle(color: Colors.white),
-            ),
-            content: Text(
-              "Grazie ${nameController.text}!\n\nServizio: ${selectedService['name']} (${selectedService['price']})\nData: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}\nOra: $selectedTime\n\nSalvato correttamente nel database!",
-              style: const TextStyle(color: Colors.white70),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    nameController.clear();
-                    phoneController.clear();
-                  });
-                },
-                child: const Text(
-                  'OK',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a1a),
+        title: const Text(
+          'Prenotazione Confermata',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Grazie ${nameController.text}!\n\nServizio: ${selectedService['name']} (${selectedService['price']})\nDurata: ${selectedService['time']}\nData: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}\nOra: $selectedTime\n\nTi aspettiamo in salone!',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                nameController.clear();
+                phoneController.clear();
+              });
+            },
+            child: const Text(
+              'OK',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
-        );
-      } else {
-        // Errore restituito dal server (es. orario già occupato grazie all'indice unico)
-        final responseData = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              responseData['message'] ?? 'Errore durante la prenotazione',
             ),
           ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossibile connettersi al server: $e')),
-      );
-    }
+        ],
+      ),
+    );
   }
 
   @override
