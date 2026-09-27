@@ -244,7 +244,7 @@ class _BookingScreenState extends State {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'service_id': 'service_r51lmpo',
-              'template_id': 'template_oz3g1jy',
+              'template_id': 'template_mhhps5d',
               'user_id': 'DT7gJqsblmEpebX0M',
               'template_params': {
                 'nome': nameController.text,
@@ -252,7 +252,7 @@ class _BookingScreenState extends State {
                 'data': formattedDate,
                 'ora': selectedTime,
                 'telefono': phoneController.text,
-              }
+              },
             }),
           );
         } catch (emailError) {
