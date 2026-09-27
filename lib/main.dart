@@ -244,7 +244,7 @@ class _BookingScreenState extends State {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'service_id': 'service_r51lmpo',
-              'template_id': 'template_mhhps5d',
+              'template_id': 'template_oz3g1jy',
               'user_id': 'DT7gJqsblmEpebX0M',
               'template_params': {
                 'nome': nameController.text,
