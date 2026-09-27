@@ -188,7 +188,7 @@ class _BookingScreenState extends State {
     }
   }
 
-  // --- QUESTA È LA FUNZIONE AGGIORNATA CHE COMUNICA CON IL SERVER ---
+  // --- FUNZIONE AGGIORNATA CON SALVATAGGIO MONGODB ED EMAILJS ---
   Future _confirmBooking() async {
     List currentSlots = getAvailableTimeSlots();
     if (currentSlots.isEmpty) {
@@ -216,13 +216,11 @@ class _BookingScreenState extends State {
       return;
     }
 
-    // Formatta la data come stringa esatta (es. "27/9/2026") per coincidere con il database
     final String formattedDate =
         '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
 
     try {
-      // Sostituisci con l'URL effettivo del tuo server su Render quando sei online,
-      // oppure usa 'http://localhost:3000/api/prenotazioni' se testi il server in locale sul pc.
+      // 1. Invio al server su Render (MongoDB)
       final response = await http.post(
         Uri.parse('https://gentlemanbarber.onrender.com/api/prenotazioni'),
         headers: {'Content-Type': 'application/json'},
@@ -239,6 +237,29 @@ class _BookingScreenState extends State {
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
+        // 2. Invio Email tramite EmailJS
+        try {
+          await http.post(
+            Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'service_id': 'service_r51lmpo',
+              'template_id': 'template_oz3g1jy',
+              'user_id': 'DT7gJqsblmEpebX0M',
+              'template_params': {
+                'nome': nameController.text,
+                'servizio': selectedService['name'],
+                'data': formattedDate,
+                'ora': selectedTime,
+                'telefono': phoneController.text,
+              }
+            }),
+          );
+        } catch (emailError) {
+          print('Errore invio email: $emailError');
+        }
+
+        // Popup di conferma avvenuta
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -248,7 +269,7 @@ class _BookingScreenState extends State {
               style: TextStyle(color: Colors.white),
             ),
             content: Text(
-              'Grazie ${nameController.text}!\n\nServizio: ${selectedService['name']} (${selectedService['price']})\nDurata: ${selectedService['time']}\nData: $formattedDate\nOra: $selectedTime\n\nSalvato nel database!',
+              'Grazie ${nameController.text}!\n\nServizio: ${selectedService['name']} (${selectedService['price']})\nDurata: ${selectedService['time']}\nData: $formattedDate\nOra: $selectedTime\n\nSalvato nel database e email inviata!',
               style: const TextStyle(color: Colors.white70),
             ),
             actions: [
@@ -272,7 +293,6 @@ class _BookingScreenState extends State {
           ),
         );
       } else {
-        // Mostra l'errore inviato dal server (es. se l'orario è già occupato)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

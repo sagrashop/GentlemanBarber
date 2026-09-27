@@ -48,22 +48,6 @@ app.post('/api/prenotazioni', async (req, res) => {
         const nuovaPrenotazione = new Prenotazione(req.body);
         await nuovaPrenotazione.save();
         console.log("Salvato con successo su MongoDB!");
-        
-        // Invio dell'email di notifica
-        const mailOptions = {
-            from: 'gentlemanbarbermessina@gmail.com',
-            to: 'gentlemanbarbermessina@gmail.com',
-            subject: `💈 Nuova Prenotazione da ${nome}!`,
-            text: `Hai ricevuto una nuova prenotazione:\n\n- Nome: \({nome}\n- Telefono:\){telefono}\n- Servizio: \({servizio} (\){prezzo})\n- Data: \({data}\n- Ora:\){ora}`
-        };
-
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error("Errore invio email:", error);
-            } else {
-                console.log("Email inviata con successo: " + info.response);
-            }
-        });
 
         res.status(201).json({ success: true, message: 'Prenotazione effettuata con successo!' });
     } catch (error) {
