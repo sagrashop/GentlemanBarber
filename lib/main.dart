@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:http/http.dart' as http;
+
+import 'dart:convert';
 
 void main() {
   runApp(const GentlemanBarberApp());
@@ -106,15 +109,11 @@ class _BookingScreenState extends State {
     },
   ];
 
-  // Restituisce gli orari in base al giorno della settimana (1 = Lunedì, 7 = Domenica)
-  List<String> getAvailableTimeSlots() {
+  List getAvailableTimeSlots() {
     int weekday = selectedDate.weekday;
-
-    // Lunedì (1) e Domenica (7): Chiuso
     if (weekday == DateTime.monday || weekday == DateTime.sunday) {
       return [];
     }
-    // Martedì (2) a Giovedì (4): 08:00 - 19:30
     if (weekday >= DateTime.tuesday && weekday <= DateTime.thursday) {
       return [
         '08:00',
@@ -129,7 +128,6 @@ class _BookingScreenState extends State {
         '19:00',
       ];
     }
-    // Venerdì (5) e Sabato (6): 08:30 - 20:00
     if (weekday == DateTime.friday || weekday == DateTime.saturday) {
       return [
         '08:30',
@@ -153,7 +151,7 @@ class _BookingScreenState extends State {
   }
 
   void _updateDefaultTime() {
-    List<String> slots = getAvailableTimeSlots();
+    List slots = getAvailableTimeSlots();
     if (slots.isNotEmpty) {
       selectedTime = slots.first;
     } else {
@@ -190,7 +188,8 @@ class _BookingScreenState extends State {
     }
   }
 
-  void _confirmBooking() {
+  // --- QUESTA È LA FUNZIONE AGGIORNATA CHE COMUNICA CON IL SERVER ---
+  Future _confirmBooking() async {
     List currentSlots = getAvailableTimeSlots();
     if (currentSlots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -210,38 +209,83 @@ class _BookingScreenState extends State {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1a1a1a),
-        title: const Text(
-          'Prenotazione Confermata',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'Grazie ${nameController.text}!\n\nServizio: ${selectedService['name']} (${selectedService['price']})\nDurata: ${selectedService['time']}\nData: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}\nOra: $selectedTime\n\nTi aspettiamo in salone!',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                nameController.clear();
-                phoneController.clear();
-              });
-            },
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+    if (selectedTime.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleziona un orario valido.')),
+      );
+      return;
+    }
+
+    // Formatta la data come stringa esatta (es. "27/9/2026") per coincidere con il database
+    final String formattedDate =
+        '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
+
+    try {
+      // Sostituisci con l'URL effettivo del tuo server su Render quando sei online,
+      // oppure usa 'http://localhost:3000/api/prenotazioni' se testi il server in locale sul pc.
+      final response = await http.post(
+        Uri.parse('https://gentlemanbarber.onrender.com/api/prenotazioni'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "servizio": selectedService['name'],
+          "prezzo": selectedService['price'],
+          "data": formattedDate,
+          "ora": selectedTime,
+          "nome": nameController.text,
+          "telefono": phoneController.text,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1a1a1a),
+            title: const Text(
+              'Prenotazione Confermata',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              'Grazie ${nameController.text}!\n\nServizio: ${selectedService['name']} (${selectedService['price']})\nDurata: ${selectedService['time']}\nData: $formattedDate\nOra: $selectedTime\n\nSalvato nel database!',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    nameController.clear();
+                    phoneController.clear();
+                  });
+                },
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
+            ],
+          ),
+        );
+      } else {
+        // Mostra l'errore inviato dal server (es. se l'orario è già occupato)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              responseData['message'] ?? 'Errore durante la prenotazione.',
             ),
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossibile connettersi al server.')),
+      );
+    }
   }
 
   @override
@@ -371,27 +415,22 @@ class _BookingScreenState extends State {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Data: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                          style: const TextStyle(
+                            fontSize: 15,
                             color: Colors.white,
-                            size: 20,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Data: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     const Text(
                       'Modifica',
