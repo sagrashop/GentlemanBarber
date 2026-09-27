@@ -223,7 +223,7 @@ class _BookingScreenState extends State {
     try {
       // 1. Invio al server su Render (MongoDB)
       final response = await http.post(
-        Uri.parse('https://gentlemanbarber.onrender.com/api/prenotazioni'),
+        Uri.parse('https://prenota.gentlemanbarber.it/api/prenotazioni'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "servizio": selectedService['name'],
