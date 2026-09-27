@@ -239,7 +239,7 @@ class _BookingScreenState extends State {
       if (response.statusCode == 201) {
         // 2. Invio Email tramite EmailJS
         try {
-          await http.post(
+          final emailResponse = await http.post(
             Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
@@ -255,10 +255,13 @@ class _BookingScreenState extends State {
               },
             }),
           );
+
+          print(
+            'Risposta EmailJS: ${emailResponse.statusCode} - ${emailResponse.body}',
+          );
         } catch (emailError) {
           print('Errore invio email: $emailError');
         }
-
         // Popup di conferma avvenuta
         showDialog(
           context: context,
