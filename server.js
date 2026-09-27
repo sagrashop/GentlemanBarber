@@ -7,7 +7,7 @@ app.use(express.json());
 app.use(cors());
 
 // Stringa di connessione ufficiale a MongoDB Atlas
-const MONGO_URI ='mongodb+srv://gentlemanbarbermessina_db_user:eyuEjSxP3WEfKyk9@gentlemanbarber.80prjoz.mongodb.net/gentleman_barber?appName=gentlemanbarber';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://gentlemanbarbermessina_db_user:eyuEjSxP3WEfKyk9@gentlemanbarber.80prjoz.mongodb.net/gentleman_barber?retryWrites=true&w=majority';
 
 // Connessione a MongoDB Atlas
 mongoose.connect(MONGO_URI)
