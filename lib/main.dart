@@ -224,7 +224,7 @@ class _BookingScreenState extends State {
       // Sostituisci con l'URL effettivo del tuo server su Render quando sei online,
       // oppure usa 'http://localhost:3000/api/prenotazioni' se testi il server in locale sul pc.
       final response = await http.post(
-        Uri.parse('https://gentlemanbarber.onrender.com/api/prenotazioni'),
+        Uri.parse('https://gentlemanbarber.onrender.com'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "servizio": selectedService['name'],
