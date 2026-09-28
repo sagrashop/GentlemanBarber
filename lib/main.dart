@@ -16,7 +16,7 @@ class GentlemanBarberApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gentleman Barber - Listino e Prenotazioni',
+      title: '${AppConfig.nomeAttivita} - Listino e Prenotazioni',
       debugShowCheckedModeBanner: false,
       locale: const Locale('it', 'IT'),
       localizationsDelegates: const [
@@ -315,8 +315,8 @@ class _BookingScreenState extends State {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'GENTLEMAN BARBER',
+        title: Text(
+          'AppConfig.nomeAttivita.toUpperCase()',
           style: TextStyle(
             letterSpacing: 3,
             fontSize: 18,
