@@ -27,12 +27,12 @@ class GentlemanBarberApp extends StatelessWidget {
       supportedLocales: const [Locale('it', 'IT')],
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.white,
-        scaffoldBackgroundColor: const Color(0xFF0a0a0a),
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.white,
-          secondary: Colors.white70,
-          surface: Color(0xFF161616),
+        primaryColor: AppConfig.accentColor,
+        scaffoldBackgroundColor: AppConfig.primaryColor,
+        colorScheme: ColorScheme.dark(
+          primary: AppConfig.accentColor,
+          secondary: AppConfig.textColor,
+          surface: AppConfig.cardColor,
         ),
       ),
       home: const BookingScreen(),
@@ -111,7 +111,7 @@ class _BookingScreenState extends State {
     },
   ];
 
-  List getAvailableTimeSlots() {
+  List<String> getAvailableTimeSlots() {
     int weekday = selectedDate.weekday;
     if (weekday == DateTime.monday || weekday == DateTime.sunday) {
       return [];
@@ -192,7 +192,7 @@ class _BookingScreenState extends State {
 
   // --- FUNZIONE DI CONFERMA USANDO CONFIG.DART ---
   Future _confirmBooking() async {
-    List currentSlots = getAvailableTimeSlots();
+    final currentSlots = getAvailableTimeSlots();
     if (currentSlots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -316,8 +316,8 @@ class _BookingScreenState extends State {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'AppConfig.nomeAttivita.toUpperCase()',
-          style: TextStyle(
+          AppConfig.nomeAttivita.toUpperCase(),
+          style: const TextStyle(
             letterSpacing: 3,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -349,7 +349,7 @@ class _BookingScreenState extends State {
             const Text(
               '1. LISTINO SERVIZI',
               style: TextStyle(
-                color: Colors.white,
+                color: AppConfig.textColor,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
               ),
@@ -368,10 +368,10 @@ class _BookingScreenState extends State {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161616),
+                    color: AppConfig.cardColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? Colors.white : Colors.white24,
+                      color: isSelected ? AppConfig.accentColor : Colors.white24,
                       width: isSelected ? 1.5 : 0.5,
                     ),
                   ),
@@ -606,7 +606,6 @@ class _AdminLoginScreenState extends State {
   final TextEditingController passController = TextEditingController();
 
   void _login() {
-    // Legge user e pass direttamente da AppConfig
     if (userController.text == AppConfig.adminUser &&
         passController.text == AppConfig.adminPass) {
       Navigator.pushReplacement(
@@ -699,7 +698,6 @@ class _AdminDashboardScreenState extends State {
     _fetchPrenotazioni();
   }
 
-  // Scarica le prenotazioni usando AppConfig.serverUrl
   Future _fetchPrenotazioni() async {
     try {
       final response = await http.get(
@@ -717,7 +715,6 @@ class _AdminDashboardScreenState extends State {
     }
   }
 
-  // Elimina una prenotazione usando AppConfig.serverUrl
   Future _deletePrenotazione(String id) async {
     try {
       final response = await http.delete(
@@ -734,7 +731,6 @@ class _AdminDashboardScreenState extends State {
     }
   }
 
-  // Modifica data e ora usando AppConfig.serverUrl
   Future _mostraDialogModifica(BuildContext context, Map prenotazione) async {
     final TextEditingController dataController = TextEditingController(
       text: prenotazione['data'],
@@ -878,7 +874,7 @@ class _AdminDashboardScreenState extends State {
                   ),
                   child: ListTile(
                     title: Text(
-                      "${p['nome']} - ${p['servizio']}",
+                      "(${p['nome']} - ${p['servizio']})",
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
