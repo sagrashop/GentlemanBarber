@@ -15,14 +15,6 @@ mongoose.connect(MONGO_URI)
 .then(() => console.log('Connesso a MongoDB Atlas con successo! 💈'))
 .catch(err => console.error('Errore di connessione a MongoDB:', err));
 
-// Configurazione del mittente email
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'gentlemanbarbermessina@gmail.com',
-        pass: 'umqndejmywlqipiz'
-    }
-});
 
 // Schema e Modello della Prenotazione
 const prenotazioneSchema = new mongoose.Schema({
