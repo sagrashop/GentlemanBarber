@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
+
 import 'dart:convert';
+
 import 'config.dart'; // Importa la configurazione universale
 
 void main() {
@@ -719,7 +721,7 @@ class _AdminDashboardScreenState extends State {
   Future _deletePrenotazione(String id) async {
     try {
       final response = await http.delete(
-        Uri.parse('\({AppConfig.serverUrl}/api/prenotazioni/\)id'),
+        Uri.parse('${AppConfig.serverUrl}/api/prenotazioni/$id'),
       );
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
