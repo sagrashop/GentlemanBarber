@@ -119,28 +119,49 @@ class _BookingScreenState extends State {
     if (weekday >= DateTime.tuesday && weekday <= DateTime.thursday) {
       return [
         '08:00',
+        '08:30',
         '09:00',
+        '09:30',
         '10:00',
+        '10:30',
         '11:00',
+        '11:30',
         '12:00',
+        '12:30',
         '15:00',
+        '15:30',
         '16:00',
+        '16:30',
         '17:00',
+        '17:30',
         '18:00',
+        '18:30',
         '19:00',
+        '19:30',
       ];
     }
     if (weekday == DateTime.friday || weekday == DateTime.saturday) {
       return [
         '08:30',
+        '09:00',
         '09:30',
+        '10:00',
         '10:30',
+        '11:00',
         '11:30',
+        '12:00',
+        '12:30',
         '15:00',
+        '15:30',
         '16:00',
+        '16:30',
         '17:00',
+        '17:30',
         '18:00',
+        '18:30',
         '19:00',
+        '19:30',
+        '20:00',
       ];
     }
     return [];
@@ -371,7 +392,9 @@ class _BookingScreenState extends State {
                     color: AppConfig.cardColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected ? AppConfig.accentColor : Colors.white24,
+                      color: isSelected
+                          ? AppConfig.accentColor
+                          : Colors.white24,
                       width: isSelected ? 1.5 : 0.5,
                     ),
                   ),
