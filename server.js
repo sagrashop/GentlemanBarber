@@ -61,6 +61,33 @@ app.post('/api/prenotazioni', async (req, res) => {
         res.status(500).json({ success: false, message: 'Errore del server: ' + error.message });
     }
 });
+// 1. Rotta per LEGGERE tutte le prenotazioni (per il pannello Admin)
+app.get('/api/prenotazioni', async (req, res) => {
+    try {
+        // Ordina le prenotazioni dalla più recente alla meno recente
+        const listaPrenotazioni = await Prenotazione.find().sort({ _id: -1 });
+        res.status(200).json(listaPrenotazioni);
+    } catch (error) {
+        console.error("Errore nel recupero delle prenotazioni:", error);
+        res.status(500).json({ success: false, message: 'Errore del server' });
+    }
+});
+
+// 2. Rotta per ELIMINARE una prenotazione tramite il suo ID (_id di MongoDB)
+app.delete('/api/prenotazioni/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const eliminata = await Prenotazione.findByIdAndDelete(id);
+        if (!eliminata) {
+            return res.status(404).json({ success: false, message: 'Prenotazione non trovata' });
+        }
+        console.log(`Prenotazione ${id} eliminata con successo.`);
+        res.status(200).json({ success: true, message: 'Prenotazione eliminata con successo' });
+    } catch (error) {
+        console.error("Errore durante l'eliminazione:", error);
+        res.status(500).json({ success: false, message: 'Errore del server' });
+    }
+});
 
 // Rotta per ottenere le ore già prenotate in una determinata data
 app.get('/api/prenotazioni/occupate', async (req, res) => {

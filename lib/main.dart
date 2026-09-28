@@ -330,7 +330,21 @@ class _BookingScreenState extends State {
         centerTitle: true,
         backgroundColor: const Color(0xFF111111),
         elevation: 1,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings, color: Colors.white54),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminLoginScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -577,6 +591,243 @@ class _BookingScreenState extends State {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ==========================================
+// 1. SCHERMATA DI LOGIN ADMIN
+// ==========================================
+class AdminLoginScreen extends StatefulWidget {
+  const AdminLoginScreen({super.key});
+
+  @override
+  State createState() => _AdminLoginScreenState();
+}
+
+class _AdminLoginScreenState extends State {
+  final TextEditingController userController = TextEditingController();
+  final TextEditingController passController = TextEditingController();
+
+  void _login() {
+    // Sostituisci "admin" e "barber2026" con la username e password che preferisci
+    if (userController.text == 'admin' && passController.text == 'barber2026') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Credenziali non valide!')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('ACCESSO ADMIN'),
+        backgroundColor: const Color(0xFF111111),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 70, color: Colors.white),
+            const SizedBox(height: 20),
+            TextField(
+              controller: userController,
+              decoration: const InputDecoration(
+                labelText: 'Nome Utente',
+                filled: true,
+                fillColor: Color(0xFF161616),
+                labelStyle: TextStyle(color: Colors.white54),
+              ),
+              style: const TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: passController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                filled: true,
+                fillColor: Color(0xFF161616),
+                labelStyle: TextStyle(color: Colors.white54),
+              ),
+              style: const TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: _login,
+                child: const Text(
+                  'ACCEDI',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 2. PANNELLO DI CONTROLLO PRENOTAZIONI
+// ==========================================
+class AdminDashboardScreen extends StatefulWidget {
+  const AdminDashboardScreen({super.key});
+
+  @override
+  State createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State {
+  List prenotazioni = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPrenotazioni();
+  }
+
+  // Scarica le prenotazioni dal server online
+  Future _fetchPrenotazioni() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://prenota.gentlemanbarber.it/api/prenotazioni'),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          prenotazioni = jsonDecode(response.body);
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      print('Errore nel recupero prenotazioni: $e');
+    }
+  }
+
+  // Elimina una prenotazione dal database
+  Future _deletePrenotazione(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('https://prenota.gentlemanbarber.it/api/prenotazioni/$id'),
+      );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Prenotazione eliminata con successo')),
+        );
+        _fetchPrenotazioni(); // Ricarica la lista aggiornata
+      }
+    } catch (e) {
+      print('Errore cancellazione: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('GESTIONE PRENOTAZIONI'),
+        backgroundColor: const Color(0xFF111111),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() => isLoading = true);
+              _fetchPrenotazioni();
+            },
+          ),
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : prenotazioni.isEmpty
+          ? const Center(
+              child: Text(
+                'Nessuna prenotazione trovata.',
+                style: TextStyle(color: Colors.white54),
+              ),
+            )
+          : ListView.builder(
+              itemCount: prenotazioni.length,
+              itemBuilder: (context, index) {
+                final p = prenotazioni[index];
+                return Card(
+                  color: const Color(0xFF161616),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      '${p['nome']} - ${p['servizio']}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Tel: ${p['telefono']}\nData: ${p['data']} alle ${p['ora']}\nPrezzo: ${p['prezzo']}',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    isThreeLine: true,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.redAccent),
+                      onPressed: () {
+                        // Conferma prima di eliminare
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: const Color(0xFF1E1E1E),
+                            title: const Text(
+                              'Elimina',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            content: const Text(
+                              'Vuoi davvero cancellare questa prenotazione?',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text(
+                                  'Annulla',
+                                  style: TextStyle(color: Colors.white54),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  _deletePrenotazione(p['_id']);
+                                },
+                                child: const Text(
+                                  'Elimina',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
