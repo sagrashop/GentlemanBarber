@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
-
 import 'dart:convert';
+import 'config.dart'; // Importa la configurazione universale
 
 void main() {
   runApp(const GentlemanBarberApp());
@@ -188,7 +188,7 @@ class _BookingScreenState extends State {
     }
   }
 
-  // --- FUNZIONE AGGIORNATA CON SALVATAGGIO MONGODB ED EMAILJS ---
+  // --- FUNZIONE DI CONFERMA USANDO CONFIG.DART ---
   Future _confirmBooking() async {
     List currentSlots = getAvailableTimeSlots();
     if (currentSlots.isEmpty) {
@@ -216,14 +216,13 @@ class _BookingScreenState extends State {
       return;
     }
 
-    // Formatta la data in modo corretto per inviare al server e all'email
     final String formattedDate =
         '${selectedDate.day.toString()}/${selectedDate.month.toString()}/${selectedDate.year.toString()}';
 
     try {
-      // 1. Invio al server su Render (MongoDB)
+      // 1. Invio al server usando AppConfig.serverUrl
       final response = await http.post(
-        Uri.parse('https://prenota.gentlemanbarber.it/api/prenotazioni'),
+        Uri.parse('${AppConfig.serverUrl}/api/prenotazioni'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "servizio": selectedService['name'],
@@ -238,15 +237,15 @@ class _BookingScreenState extends State {
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
-        // 2. Invio Email tramite EmailJS
+        // 2. Invio Email tramite EmailJS usando AppConfig
         try {
-          final emailResponse = await http.post(
+          await http.post(
             Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
-              'service_id': 'service_r51lmpo',
-              'template_id': 'template_oz3g1jy',
-              'user_id': 'DT7gJqsblmEpebX0M',
+              'service_id': AppConfig.emailServiceId,
+              'template_id': AppConfig.emailTemplateId,
+              'user_id': AppConfig.emailUserId,
               'template_params': {
                 'nome': nameController.text,
                 'servizio': selectedService['name'],
@@ -256,14 +255,10 @@ class _BookingScreenState extends State {
               },
             }),
           );
-
-          print(
-            'Risposta EmailJS: ${emailResponse.statusCode} - ${emailResponse.body}',
-          );
         } catch (emailError) {
           print('Errore invio email: $emailError');
         }
-        // Popup di conferma avvenuta
+
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -344,7 +339,6 @@ class _BookingScreenState extends State {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -596,7 +590,7 @@ class _BookingScreenState extends State {
 }
 
 // ==========================================
-// 1. SCHERMATA DI LOGIN ADMIN
+// SCHERMATA DI LOGIN ADMIN (USA APCONFIG)
 // ==========================================
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -610,7 +604,9 @@ class _AdminLoginScreenState extends State {
   final TextEditingController passController = TextEditingController();
 
   void _login() {
-    if (userController.text == 'admin' && passController.text == 'barber2026') {
+    // Legge user e pass direttamente da AppConfig
+    if (userController.text == AppConfig.adminUser &&
+        passController.text == AppConfig.adminPass) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
@@ -682,7 +678,7 @@ class _AdminLoginScreenState extends State {
 }
 
 // ==========================================
-// 2. PANNELLO DI CONTROLLO PRENOTAZIONI
+// PANNELLO DI CONTROLLO ADMIN (USA APCONFIG)
 // ==========================================
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -701,11 +697,11 @@ class _AdminDashboardScreenState extends State {
     _fetchPrenotazioni();
   }
 
-  // Scarica le prenotazioni dal server online
+  // Scarica le prenotazioni usando AppConfig.serverUrl
   Future _fetchPrenotazioni() async {
     try {
       final response = await http.get(
-        Uri.parse('https://prenota.gentlemanbarber.it/api/prenotazioni'),
+        Uri.parse('${AppConfig.serverUrl}/api/prenotazioni'),
       );
       if (response.statusCode == 200) {
         setState(() {
@@ -719,24 +715,24 @@ class _AdminDashboardScreenState extends State {
     }
   }
 
-  // Elimina una prenotazione dal database
+  // Elimina una prenotazione usando AppConfig.serverUrl
   Future _deletePrenotazione(String id) async {
     try {
       final response = await http.delete(
-        Uri.parse('https://prenota.gentlemanbarber.it/api/prenotazioni/$id'),
+        Uri.parse('\({AppConfig.serverUrl}/api/prenotazioni/\)id'),
       );
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Prenotazione eliminata con successo')),
         );
-        _fetchPrenotazioni(); // Ricarica la lista aggiornata
+        _fetchPrenotazioni();
       }
     } catch (e) {
       print('Errore cancellazione: $e');
     }
   }
 
-  // Mostra il dialog per modificare data e ora della prenotazione
+  // Modifica data e ora usando AppConfig.serverUrl
   Future _mostraDialogModifica(BuildContext context, Map prenotazione) async {
     final TextEditingController dataController = TextEditingController(
       text: prenotazione['data'],
@@ -791,10 +787,9 @@ class _AdminDashboardScreenState extends State {
               ),
               onPressed: () async {
                 try {
-                  // Chiamata PUT al server per aggiornare la prenotazione controllando i doppioni
                   final response = await http.put(
                     Uri.parse(
-                      'https://prenota.gentlemanbarber.it/api/prenotazioni/${prenotazione['_id']}',
+                      '${AppConfig.serverUrl}/api/prenotazioni/${prenotazione['_id']}',
                     ),
                     headers: {'Content-Type': 'application/json'},
                     body: jsonEncode({
@@ -809,7 +804,7 @@ class _AdminDashboardScreenState extends State {
 
                   if (response.statusCode == 200) {
                     Navigator.pop(context);
-                    _fetchPrenotazioni(); // Ricarica la lista
+                    _fetchPrenotazioni();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Prenotazione spostata con successo!'),
@@ -881,7 +876,7 @@ class _AdminDashboardScreenState extends State {
                   ),
                   child: ListTile(
                     title: Text(
-                      '${p['nome']} - ${p['servizio']}',
+                      "${p['nome']} - ${p['servizio']}",
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -892,7 +887,6 @@ class _AdminDashboardScreenState extends State {
                       style: const TextStyle(color: Colors.white70),
                     ),
                     isThreeLine: true,
-                    // Aggiunto il tasto modifica (matita) accanto al cestino
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -901,9 +895,7 @@ class _AdminDashboardScreenState extends State {
                             Icons.edit,
                             color: Colors.amberAccent,
                           ),
-                          onPressed: () {
-                            _mostraDialogModifica(context, p);
-                          },
+                          onPressed: () => _mostraDialogModifica(context, p),
                         ),
                         IconButton(
                           icon: const Icon(
@@ -911,7 +903,6 @@ class _AdminDashboardScreenState extends State {
                             color: Colors.redAccent,
                           ),
                           onPressed: () {
-                            // Conferma prima di eliminare
                             showDialog(
                               context: context,
                               builder: (ctx) => AlertDialog(
