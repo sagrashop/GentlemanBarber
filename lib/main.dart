@@ -218,7 +218,7 @@ class _BookingScreenState extends State {
 
     // Formatta la data in modo corretto per inviare al server e all'email
     final String formattedDate =
-        '${selectedDate.day.toString()}/${selectedDate.month.toString()}/${selectedDate.year.toString()}';
+        '\({selectedDate.day.toString()}/\){selectedDate.month.toString()}/${selectedDate.year.toString()}';
 
     try {
       // 1. Invio al server su Render (MongoDB)
@@ -462,7 +462,7 @@ class _BookingScreenState extends State {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Data: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                          'Data: \({selectedDate.day}/\){selectedDate.month}/${selectedDate.year}',
                           style: const TextStyle(
                             fontSize: 15,
                             color: Colors.white,
@@ -610,7 +610,6 @@ class _AdminLoginScreenState extends State {
   final TextEditingController passController = TextEditingController();
 
   void _login() {
-    // Sostituisci "admin" e "barber2026" con la username e password che preferisci
     if (userController.text == 'admin' && passController.text == 'barber2026') {
       Navigator.pushReplacement(
         context,
@@ -737,6 +736,114 @@ class _AdminDashboardScreenState extends State {
     }
   }
 
+  // Mostra il dialog per modificare data e ora della prenotazione
+  Future _mostraDialogModifica(BuildContext context, Map prenotazione) async {
+    final TextEditingController dataController = TextEditingController(
+      text: prenotazione['data'],
+    );
+    final TextEditingController oraController = TextEditingController(
+      text: prenotazione['ora'],
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text(
+            'Modifica Prenotazione',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: dataController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Nuova Data (es. 29/9/2026)',
+                  labelStyle: TextStyle(color: Colors.white54),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: oraController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Nuovo Orario (es. 10:00)',
+                  labelStyle: TextStyle(color: Colors.white54),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Annulla',
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () async {
+                try {
+                  // Chiamata PUT al server per aggiornare la prenotazione controllando i doppioni
+                  final response = await http.put(
+                    Uri.parse(
+                      'https://prenota.gentlemanbarber.it/api/prenotazioni/${prenotazione['_id']}',
+                    ),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode({
+                      'data': dataController.text,
+                      'ora': oraController.text,
+                      'servizio': prenotazione['servizio'],
+                      'prezzo': prenotazione['prezzo'],
+                      'nome': prenotazione['nome'],
+                      'telefono': prenotazione['telefono'],
+                    }),
+                  );
+
+                  if (response.statusCode == 200) {
+                    Navigator.pop(context);
+                    _fetchPrenotazioni(); // Ricarica la lista
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Prenotazione spostata con successo!'),
+                      ),
+                    );
+                  } else {
+                    final resData = jsonDecode(response.body);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          resData['message'] ?? 'Orario già occupato o errore',
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Errore di connessione al server.'),
+                    ),
+                  );
+                }
+              },
+              child: const Text(
+                'Salva',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -785,44 +892,62 @@ class _AdminDashboardScreenState extends State {
                       style: const TextStyle(color: Colors.white70),
                     ),
                     isThreeLine: true,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: () {
-                        // Conferma prima di eliminare
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            backgroundColor: const Color(0xFF1E1E1E),
-                            title: const Text(
-                              'Elimina',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            content: const Text(
-                              'Vuoi davvero cancellare questa prenotazione?',
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text(
-                                  'Annulla',
-                                  style: TextStyle(color: Colors.white54),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  _deletePrenotazione(p['_id']);
-                                },
-                                child: const Text(
-                                  'Elimina',
-                                  style: TextStyle(color: Colors.redAccent),
-                                ),
-                              ),
-                            ],
+                    // Aggiunto il tasto modifica (matita) accanto al cestino
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.amberAccent,
                           ),
-                        );
-                      },
+                          onPressed: () {
+                            _mostraDialogModifica(context, p);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.redAccent,
+                          ),
+                          onPressed: () {
+                            // Conferma prima di eliminare
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                title: const Text(
+                                  'Elimina',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                content: const Text(
+                                  'Vuoi davvero cancellare questa prenotazione?',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text(
+                                      'Annulla',
+                                      style: TextStyle(color: Colors.white54),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      _deletePrenotazione(p['_id']);
+                                    },
+                                    child: const Text(
+                                      'Elimina',
+                                      style: TextStyle(color: Colors.redAccent),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 );

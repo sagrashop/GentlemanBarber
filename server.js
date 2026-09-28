@@ -100,6 +100,45 @@ app.get('/api/prenotazioni/occupate', async (req, res) => {
         res.status(500).json({ success: false, message: 'Errore nel recupero degli orari.' });
     }
 });
+// MODIFICA PRENOTAZIONE (Sposta data/ora o cambia dettagli)
+app.put('/api/prenotazioni/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { data, ora, servizio, prezzo, nome, telefono } = req.body;
+
+        // 1. Controlla se il nuovo orario è già occupato (escludendo la prenotazione corrente che stiamo modificando)
+        const slotOccupato = await Prenotazione.findOne({
+            _id: { $ne: id }, // Esclude la prenotazione attuale
+            data: data,
+            ora: ora
+        });
+
+        if (slotOccupato) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Attenzione: Questo orario è già occupato da un\'altra prenotazione!' 
+            });
+        }
+
+        // 2. Esegue l'aggiornamento
+        const prenotazioneAggiornata = await Prenotazione.findByIdAndUpdate(
+            id,
+            { data, ora, servizio, prezzo, nome, telefono },
+            { new: true }
+        );
+
+        if (!prenotazioneAggiornata) {
+            return res.status(404).json({ success: false, message: 'Prenotazione non trovata.' });
+        }
+
+        console.log("Prenotazione modificata con successo:", id);
+        res.status(200).json({ success: true, message: 'Prenotazione aggiornata con successo!', prenotazione: prenotazioneAggiornata });
+
+    } catch (error) {
+        console.error("Errore durante la modifica:", error);
+        res.status(500).json({ success: false, message: 'Errore del server durante la modifica.' });
+    }
+});
 
 const path = require('path');
 
