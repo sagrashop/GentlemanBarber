@@ -218,7 +218,7 @@ class _BookingScreenState extends State {
 
     // Formatta la data in modo corretto per inviare al server e all'email
     final String formattedDate =
-        '\({selectedDate.day.toString()}/\){selectedDate.month.toString()}/${selectedDate.year.toString()}';
+        '${selectedDate.day.toString()}/${selectedDate.month.toString()}/${selectedDate.year.toString()}';
 
     try {
       // 1. Invio al server su Render (MongoDB)
@@ -462,7 +462,7 @@ class _BookingScreenState extends State {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Data: \({selectedDate.day}/\){selectedDate.month}/${selectedDate.year}',
+                          'Data: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
                           style: const TextStyle(
                             fontSize: 15,
                             color: Colors.white,
